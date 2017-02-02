@@ -11,8 +11,8 @@ int main(int argc, char** argv)
     ros::Rate sleeper(1);
     ros::Publisher publisher = nh.advertise<std_msgs::String>("myfirsttopic", (uint32_t)100, false); // Used to send messages to the other side
 
-    int count = 3;
-    while (ros::ok() && count-- > 0)
+    int count = 5;
+    while (ros::ok() && count > 0)
     {
         //Publish a message to the topic
         std_msgs::String msgToSend;
@@ -20,6 +20,8 @@ int main(int argc, char** argv)
         publisher.publish(msgToSend);
         sleeper.sleep();
         ros::spinOnce();
+
+        count--;
     }
 
     ros::shutdown();
