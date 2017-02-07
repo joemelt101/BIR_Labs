@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/joemelt101/catkin_ws/src/roomba/circle.cpp
+ros/ros.h
+-
+geometry_msgs/Twist.h
+-
+geometry_msgs/Vector3.h
+-
+cmath
+-
+

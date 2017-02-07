@@ -1,0 +1,4 @@
+<launch>
+    <master auto="start" />
+    <node output="screen" name="controller_square" pkg="roomba" type="square_node" />
+</launch>

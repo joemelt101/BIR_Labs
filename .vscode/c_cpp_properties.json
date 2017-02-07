@@ -10,7 +10,7 @@
         },
         {
             "name": "Linux",
-            "includePath": ["/usr/include"],
+            "includePath": ["/usr/include", "/opt/ros/indigo/include/", "/home/joemelt101/catkin_ws/src/roomba/src/include/"],
             "browse" : {
                 "limitSymbolsToIncludedHeaders" : true,
                 "databaseFilename" : ""

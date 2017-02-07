@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/joemelt101/catkin_ws/src/roomba/src/include/RoombaBot.cpp
+ros/ros.h
+-
+geometry_msgs/Twist.h
+-
+geometry_msgs/Vector3.h
+-
+nav_msgs/Odometry.h
+-
+math.h
+-
+
