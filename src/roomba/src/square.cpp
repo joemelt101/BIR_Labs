@@ -67,13 +67,34 @@ int main(int argc, char** argv)
 
     ros::spinOnce();
     // rCon.moveFoward(1.0);
-    rCon.rotateRadiansAmount(PI / 2);
+    //rCon.rotateRadiansAmount(PI / 2);
+    //rCon.setAngVelocity(1.0);
+
+    int numTimes = 4;
+    bool readyToTurn = false;
 
     ///////////////////////
     // Start the work cycle
     while (ros::ok())
     {
         rCon.update();
+
+        //Go in a square
+
+        if (! rCon.actionInProgress() && numTimes > 0)
+        {
+            if (readyToTurn)
+            {
+                rCon.rotateCounterClockwise(PI / 2);
+                readyToTurn = false;
+                numTimes--;
+            }
+            else
+            {
+                rCon.moveFoward(1.0);
+                readyToTurn = true;
+            }
+        }
 
         ros::spinOnce();
         ros::Duration(0.1).sleep();
