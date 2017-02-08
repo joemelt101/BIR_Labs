@@ -1,4 +1,4 @@
 <launch>
     <master auto="start" />
-    <node launch-prefix="gdb -ex -run" name="jared_node" pkg="roomba" type="circle_node" />
+    <node name="circle_node" pkg="roomba" type="circle_node" />
 </launch>

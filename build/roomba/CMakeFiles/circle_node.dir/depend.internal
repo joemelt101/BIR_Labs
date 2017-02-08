@@ -3,3 +3,4 @@
 
 roomba/CMakeFiles/circle_node.dir/src/circle.cpp.o
  /home/joemelt101/catkin_ws/src/roomba/src/circle.cpp
+ /home/joemelt101/catkin_ws/src/roomba/src/include/RoombaBot.cpp

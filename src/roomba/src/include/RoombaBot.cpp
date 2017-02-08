@@ -43,7 +43,8 @@ namespace irobot
     RoombaBot::RoombaBot(void)
     {
         // Initiate subscribers and publishers
-        this->_movingFoward = true;
+        _movingFoward = false;
+        _rotating = false;
         ros::NodeHandle nh;
         _velocityPublisher = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100, false);
         _odomSubscriber = nh.subscribe<nav_msgs::Odometry>("/odom", 100, &RoombaBot::getPose, this);
@@ -52,6 +53,7 @@ namespace irobot
 
     bool RoombaBot::actionInProgress()
     {
+        ROS_INFO("Action in Progress = %s", (_movingFoward || _rotating) ? "True" : "False");
         return _movingFoward || _rotating;
     }
 
