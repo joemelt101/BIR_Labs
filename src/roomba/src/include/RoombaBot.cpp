@@ -73,6 +73,8 @@ namespace irobot
 
     void RoombaBot::update(void)
     {
+        sendVelocityMessage();
+
         // Handle update functionality here...
         if (this->_movingFoward == true)
         {
@@ -172,7 +174,7 @@ namespace irobot
         this->_distanceToTravel = distance;
         
         // set velocity to .5 until within certain distance of endpoint
-        this->setVelocity(0.5);
+        this->setVelocity(0.1);
     }
 
     void RoombaBot::rotateClockwise(float radianOffset)
@@ -184,7 +186,7 @@ namespace irobot
         else if (_desiredAngle < 0.0)
             _desiredAngle += 2*PI;
 
-        setAngVelocity(-0.5);
+        setAngVelocity(-0.1);
         _rotating = true;
     }
 
@@ -197,7 +199,7 @@ namespace irobot
         else if (_desiredAngle < 0.0)
             _desiredAngle += 2*PI;
 
-        setAngVelocity(0.5);
+        setAngVelocity(0.1);
         _rotating = true;
     }
 }
