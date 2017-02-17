@@ -74,20 +74,19 @@ int main(int argc, char** argv)
     //rCon.setAngVelocity(1.0);
     //rCon.rotateClockwise(PI);
     int numTimes = 4; // This determines the number of sides on the polygon to draw
-    float angleToTurn = 2*PI / numTimes;
+    float angleToTurn = 2 * PI / numTimes;
     bool readyToTurn = false;
 
     // ///////////////////////
     // // Start the work cycle
      while (ros::ok())
      {
+        rCon.update();
 
         //Go in a square
 
         if ((! rCon.actionInProgress()) && numTimes > 0)
         {
-            ROS_INFO("Hello There!");
-
             if (readyToTurn)
             {
                 rCon.rotateCounterClockwise(angleToTurn);
@@ -101,7 +100,6 @@ int main(int argc, char** argv)
             }
         }
       
-        rCon.update();
         ros::spinOnce();
     }
 
