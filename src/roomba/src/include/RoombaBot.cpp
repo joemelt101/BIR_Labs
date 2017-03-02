@@ -30,12 +30,12 @@ namespace irobot
             float _velocity;
             float _angularVelocity;
             float _closestDistance; // The closest distace the robot has traveled to its destination.
-            float _oTi; // The transformation from the initial frame to the origin
-            float _iTg; // The transformation from the goal frame to the initial frame
-            float _gTi; // The transformation from the initial frame to the goal frame.
-            float _kp = 0.5;
-            float _kb = -0.5;
-            float _ka = 1.5;
+            tf::Transform _oTi; // The transformation from the initial frame to the origin
+            tf::Transform _iTg; // The transformation from the goal frame to the initial frame
+            tf::Transform _gTi; // The transformation from the initial frame to the goal frame.
+            float _kp;
+            float _kb; 
+            float _ka;             
             bool _movingFoward; // Whether or not the robot is moving currently turning
             bool _rotating; // Whether or not the robot is currently turning
             bool _moving; // Whether or not the robot is moving directly to a location
@@ -59,6 +59,10 @@ namespace irobot
         _velocityPublisher = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100, false);
         _wheelPublisher = nh.advertise<ca_msgs::WheelVelocity>("/ca_msgs/WheelVelocity", 100, false);
         _odomSubscriber = nh.subscribe<nav_msgs::Odometry>("/odom", 100, &RoombaBot::getPose, this);
+
+        _kp = 0.5;
+        _kb = -0.5;
+        _ka = 1.5;
 
         _currentPose.setIdentity();
         ros::Duration(1).sleep();
@@ -137,10 +141,11 @@ namespace irobot
         if (_moving)
         {
             tf::Transform oPr = _currentPose;
-            tf::Transform gPr = _gTi * _iTo * oPr;
+            tf::Transform iTo = _oTi.inverse();
+            tf::Transform gPr = _gTi * iTo * oPr;
 
             // Calculate the alpha, beta, and rho
-            Vector3 gPr_point = gPr.getOrigin(); // includes dx, dy, dz
+            tf::Vector3 gPr_point = gPr.getOrigin(); // includes dx, dy, dz
             float dx = gPr_point.getX();
             float dy = gPr_point.getY();
             
@@ -152,7 +157,7 @@ namespace irobot
             float theta = gPr.getRotation().getAngle();
             float beta = -atan(dy / dx);
             float alpha = -beta - theta;
-            float rho = gPr_point.getLength(); 
+            float rho = gPr_point.length(); 
 
             // Check to see if close enough to the end
             // ensure BETA < Threshhold
@@ -165,14 +170,14 @@ namespace irobot
             else
             {
                 // Plug into the loop to determine the wheel velocities
-                phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + kbeta*CHASSIS_RAD);
-                phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - kbeta*CHASSIS_RAD);
+                float phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + _kb*CHASSIS_RAD);
+                float phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - _kb*CHASSIS_RAD);
 
                 // Send off wheel velocities and we're done!
                 ca_msgs::WheelVelocity wheelVelocity;
                 wheelVelocity.velocityRight = phi_r;
                 wheelVelocity.velocityLeft = phi_l;
-                _wheelPublisher.publish(wheelVelocity);        
+                _wheelPublisher.publish(wheelVelocity);
             }
         }
     }

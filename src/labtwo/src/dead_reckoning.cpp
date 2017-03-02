@@ -12,6 +12,12 @@ int main(int argc, char** argv)
     irobot::RoombaBot rCon;
 
     ros::spinOnce();
+    
+    tf::Vector3 pos_v3(1, 0, 0);
+    tf::Transform position;
+    position.setIdentity();
+    position.setOrigin(pos_v3);
+    rCon.goToPosition(position);
 
      ///////////////////////
      // Start the work cycle
