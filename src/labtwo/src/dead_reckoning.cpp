@@ -13,9 +13,12 @@ int main(int argc, char** argv)
 
     ros::spinOnce();
     
-    tf::Vector3 pos_v3(1, 0, 0);
+    tf::Vector3 pos_v3(0, 0, 0);
     tf::Transform position;
     position.setIdentity();
+    tf::Quaternion q;
+    q.setRPY(0, 0, PI / 4);
+    position.setRotation(q);
     position.setOrigin(pos_v3);
     rCon.goToPosition(position);
 

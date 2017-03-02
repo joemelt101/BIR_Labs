@@ -11,6 +11,7 @@
 
 #define CHASSIS_RAD 0.1175
 #define WHEEL_RADIUS 0.036
+#define DEG_TO_RAD(x) x / 360 * 2 * 3.14159
 
 namespace irobot
 {
@@ -140,6 +141,8 @@ namespace irobot
 
         if (_moving)
         {
+            ROS_INFO_THROTTLE(1, "Moving!");
+
             tf::Transform oPr = _currentPose;
             tf::Transform iTo = _oTi.inverse();
             tf::Transform gPr = _gTi * iTo * oPr;
@@ -157,21 +160,30 @@ namespace irobot
             float theta = gPr.getRotation().getAngle();
             float beta = -atan(dy / dx);
             float alpha = -beta - theta;
+
+            if (alpha < PI || alpha > PI)
+            {
+                
+            }
+
             float rho = gPr_point.length(); 
 
             // Check to see if close enough to the end
             // ensure BETA < Threshhold
             // Ensure length of x, y, z < threshhold
-            if (beta < 3 / 360 * 2 * PI && rho < 0.05 && theta < 3 / 360 * 2 * PI)
+            if (beta < DEG_TO_RAD(3) && rho < 0.05 && theta < DEG_TO_RAD(3))
             {
                 // Yay!!! We made it...
+                ROS_INFO("Done Moving!");
                 _moving = false;
             }
             else
             {
                 // Plug into the loop to determine the wheel velocities
-                float phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + _kb*CHASSIS_RAD);
-                float phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - _kb*CHASSIS_RAD);
+                float phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + _kb*beta*CHASSIS_RAD);
+                float phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - _kb*beta*CHASSIS_RAD);
+                ROS_INFO_THROTTLE(1, "(phi_r, phi_l): (%f, %f)", phi_r, phi_l);
+                ROS_INFO_THROTTLE(1, "(rho, alpha, beta): (%f, %f, %f)", rho, alpha, beta);
 
                 // Send off wheel velocities and we're done!
                 ca_msgs::WheelVelocity wheelVelocity;
