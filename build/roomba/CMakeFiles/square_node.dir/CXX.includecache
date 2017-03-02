@@ -19,6 +19,8 @@ nav_msgs/Odometry.h
 -
 math.h
 -
+ca_msgs/WheelVelocity.h
+/home/joemelt101/catkin_ws/src/roomba/src/include/ca_msgs/WheelVelocity.h
 
 /home/joemelt101/catkin_ws/src/roomba/src/square.cpp
 ros/ros.h

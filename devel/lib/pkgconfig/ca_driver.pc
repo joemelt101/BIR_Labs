@@ -1,0 +1,8 @@
+prefix=/home/joemelt101/catkin_ws/devel
+
+Name: ca_driver
+Description: Description of ca_driver
+Version: 1.2.0
+Cflags: -I/home/joemelt101/catkin_ws/src/create_autonomy/ca_driver/include
+Libs: -L/home/joemelt101/catkin_ws/devel/lib -llibcreate
+Requires: ca_description ca_msgs diagnostic_msgs diagnostic_updater geometry_msgs nav_msgs roscpp sensor_msgs std_msgs tf

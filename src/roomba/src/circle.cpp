@@ -11,6 +11,8 @@ int main(int argc, char** argv)
     ros::init(argc, argv, "circle");
     ros::start();
 
+    ROS_INFO("Hello WOrld!");
+
     float r, v, w;
     r = 0.5;
     v = 0.15; // m/s

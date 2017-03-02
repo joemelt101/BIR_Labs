@@ -92,7 +92,7 @@ int main(int argc, char** argv)
                 readyToTurn = true;
             }
         }
-      
+        
         ros::spinOnce();
     }
 

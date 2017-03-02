@@ -1,0 +1,8 @@
+prefix=/home/joemelt101/catkin_ws/devel
+
+Name: labtwo
+Description: Description of labtwo
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/joemelt101/catkin_ws/devel/lib 
+Requires: 

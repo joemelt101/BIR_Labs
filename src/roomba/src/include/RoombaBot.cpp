@@ -5,7 +5,12 @@
 #include <nav_msgs/Odometry.h>
 #include <math.h>
 
+#include "ca_msgs/WheelVelocity.h"
+
 #define PI 3.14159
+
+#define CHASSIS_RAD 0.1175
+#define WHEEL_RADIUS 0.036
 
 namespace irobot
 {
@@ -20,20 +25,29 @@ namespace irobot
             void rotateCounterClockwise(float radians);
             void rotateClockwise(float radians);
             bool actionInProgress(void);
+            void goToPosition(tf::Transform goalPosition);
         private:
             float _velocity;
             float _angularVelocity;
             float _closestDistance; // The closest distace the robot has traveled to its destination.
+            float _oTi; // The transformation from the initial frame to the origin
+            float _iTg; // The transformation from the goal frame to the initial frame
+            float _gTi; // The transformation from the initial frame to the goal frame.
+            float _kp = 0.5;
+            float _kb = -0.5;
+            float _ka = 1.5;
             bool _movingFoward; // Whether or not the robot is moving currently turning
             bool _rotating; // Whether or not the robot is currently turning
+            bool _moving; // Whether or not the robot is moving directly to a location
             void sendVelocityMessage(); // Sends the velocity message to the hardware. Called repeatedly via update.
-            void getPose(const nav_msgs::Odometry::ConstPtr& pose); // Callback. Sets _currentPosition to the updated value.
+            void getPose(const nav_msgs::Odometry::ConstPtr& pose); // Callback. Sets _currentPose to the updated value.
 
-            tf::Transform _currentPosition; // The current position of the robot.
+            tf::Transform _currentPose; // The current position of the robot.
             tf::Transform _desiredPosition; // The desired position of the robot.
 
             ros::Subscriber _odomSubscriber; // The odometer subscriber. This takes values and populates local variables via callbacks.
             ros::Publisher _velocityPublisher; // The publisher for the velocity. Sends the velocity to the hardware.
+            ros::Publisher _wheelPublisher;
     };
 
     RoombaBot::RoombaBot(void)
@@ -43,8 +57,10 @@ namespace irobot
         _rotating = false;
         ros::NodeHandle nh;
         _velocityPublisher = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100, false);
+        _wheelPublisher = nh.advertise<ca_msgs::WheelVelocity>("/ca_msgs/WheelVelocity", 100, false);
         _odomSubscriber = nh.subscribe<nav_msgs::Odometry>("/odom", 100, &RoombaBot::getPose, this);
-        _currentPosition.setIdentity();
+
+        _currentPose.setIdentity();
         ros::Duration(1).sleep();
     }
 
@@ -70,6 +86,7 @@ namespace irobot
 
     void RoombaBot::update(void)
     {
+        //ROS_INFO("Hello!");
         sendVelocityMessage();
 
         if (_movingFoward == true)
@@ -78,7 +95,7 @@ namespace irobot
             tf::Vector3 goal_pt = _desiredPosition.getOrigin();
 
             // Get current point
-            tf::Vector3 current_pt = _currentPosition.getOrigin();
+            tf::Vector3 current_pt = _currentPose.getOrigin();
 
             // Get the difference
             tf::Vector3 diff = goal_pt - current_pt;
@@ -92,7 +109,7 @@ namespace irobot
 
             if (distanceToGoal < 0.1 || distanceToGoal > _closestDistance * 1.10)
             {
-                ROS_INFO("Done moving!");                
+                //ROS_INFO("Done moving!");                
                 _movingFoward = false;
                 setVelocity(0.0);
             }
@@ -101,7 +118,7 @@ namespace irobot
         if (_rotating)
         {
             // In radians
-            float currentAngle = _currentPosition.getRotation().getAngle();
+            float currentAngle = _currentPose.getRotation().getAngle();
             float desiredAngle = _desiredPosition.getRotation().getAngle();
 
             float diff = desiredAngle - currentAngle;
@@ -116,19 +133,73 @@ namespace irobot
                 setAngVelocity(0.0);
             }
         }
+
+        if (_moving)
+        {
+            tf::Transform oPr = _currentPose;
+            tf::Transform gPr = _gTi * _iTo * oPr;
+
+            // Calculate the alpha, beta, and rho
+            Vector3 gPr_point = gPr.getOrigin(); // includes dx, dy, dz
+            float dx = gPr_point.getX();
+            float dy = gPr_point.getY();
+            
+            if (dx == 0)
+            {
+                dx = 0.00001;
+            }
+
+            float theta = gPr.getRotation().getAngle();
+            float beta = -atan(dy / dx);
+            float alpha = -beta - theta;
+            float rho = gPr_point.getLength(); 
+
+            // Check to see if close enough to the end
+            // ensure BETA < Threshhold
+            // Ensure length of x, y, z < threshhold
+            if (beta < 3 / 360 * 2 * PI && rho < 0.05 && theta < 3 / 360 * 2 * PI)
+            {
+                // Yay!!! We made it...
+                _moving = false;
+            }
+            else
+            {
+                // Plug into the loop to determine the wheel velocities
+                phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + kbeta*CHASSIS_RAD);
+                phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - kbeta*CHASSIS_RAD);
+
+                // Send off wheel velocities and we're done!
+                ca_msgs::WheelVelocity wheelVelocity;
+                wheelVelocity.velocityRight = phi_r;
+                wheelVelocity.velocityLeft = phi_l;
+                _wheelPublisher.publish(wheelVelocity);        
+            }
+        }
     }
 
     void RoombaBot::sendVelocityMessage(void)
     {
         // Now send proper message
-        geometry_msgs::Twist msgToSend;
-        msgToSend.linear.x = _velocity;
-        msgToSend.linear.y = 0.0;
-        msgToSend.linear.z = 0.0;
-        msgToSend.angular.x = 0.0;
-        msgToSend.angular.y = 0.0;
-        msgToSend.angular.z = _angularVelocity;
-        _velocityPublisher.publish(msgToSend);
+        // geometry_msgs::Twist msgToSend;
+        // msgToSend.linear.x = _velocity;
+        // msgToSend.linear.y = 0.0;
+        // msgToSend.linear.z = 0.0;
+        // msgToSend.angular.x = 0.0;
+        // msgToSend.angular.y = 0.0;
+        // msgToSend.angular.z = _angularVelocity;
+
+        // Do my own conversion to wheel angles
+        ca_msgs::WheelVelocity wheelVelocity;
+
+        //ROS_INFO_THROTTLE(5, "v = %f, av = %f, r = %f", _velocity, _angularVelocity, WHEEL_RADIUS);
+        float w1 = (_velocity + CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
+        float w2 = (_velocity - CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
+        wheelVelocity.velocityRight = w1;
+        wheelVelocity.velocityLeft = w2;
+        //ROS_INFO_THROTTLE(5, "Velocity Left: %f, Velocity Right: %f", w1, w2);
+        _wheelPublisher.publish(wheelVelocity);
+
+        //_velocityPublisher.publish(msgToSend);
     }
 
     void RoombaBot::getPose(const nav_msgs::Odometry::ConstPtr& odom)
@@ -150,7 +221,7 @@ namespace irobot
         transform.setIdentity();
         transform.setOrigin(tf::Vector3(currentX, currentY, currentZ));
         transform.setRotation(q);
-        _currentPosition = transform;
+        _currentPose = transform;
     }
 
     void RoombaBot::moveFoward(float distance)
@@ -160,7 +231,7 @@ namespace irobot
         tf::Transform t1;
         t1.setIdentity();
         t1.setOrigin(tf::Vector3(distance, 0.0, 0.0));
-        _desiredPosition = _currentPosition * t1;
+        _desiredPosition = _currentPose * t1;
         _closestDistance = 10000; //set to a high number so it decreases...
 
         setVelocity(0.25);
@@ -175,7 +246,7 @@ namespace irobot
         tf::Quaternion rotationOffset;
         rotationOffset.setRPY(0.0, 0.0, -radianOffset);
         t1.setRotation(rotationOffset);
-        _desiredPosition = _currentPosition * t1;
+        _desiredPosition = _currentPose * t1;
 
         ROS_INFO("Started turning!");
 
@@ -191,10 +262,20 @@ namespace irobot
         tf::Quaternion rotationOffset;
         rotationOffset.setRPY(0.0, 0.0, radianOffset);
         t1.setRotation(rotationOffset);
-        _desiredPosition = _currentPosition * t1;
-
-        ROS_INFO("Started turning!");
+        _desiredPosition = _currentPose * t1;
 
         setAngVelocity(0.1);
+    }
+
+    void RoombaBot::goToPosition(tf::Transform goalPosition)
+    {
+        // Set Initial Reference Frame to Origin
+        tf::Transform oTi(_currentPose);
+        _oTi = oTi;
+
+        // Calculate the Goal Ref Frame from the Initial Frame using the goalPosition variables
+        _iTg = goalPosition;
+        _gTi = _iTg.inverse();
+        _moving = true;
     }
 }

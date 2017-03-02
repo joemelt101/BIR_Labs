@@ -117,8 +117,14 @@ ENDIF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unsp
 IF(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   INCLUDE("/home/joemelt101/catkin_ws/build/gtest/cmake_install.cmake")
+  INCLUDE("/home/joemelt101/catkin_ws/build/create_autonomy/ca_tools/cmake_install.cmake")
+  INCLUDE("/home/joemelt101/catkin_ws/build/create_autonomy/create_autonomy/cmake_install.cmake")
   INCLUDE("/home/joemelt101/catkin_ws/build/roomba/cmake_install.cmake")
+  INCLUDE("/home/joemelt101/catkin_ws/build/create_autonomy/ca_msgs/cmake_install.cmake")
   INCLUDE("/home/joemelt101/catkin_ws/build/labone/cmake_install.cmake")
+  INCLUDE("/home/joemelt101/catkin_ws/build/create_autonomy/ca_description/cmake_install.cmake")
+  INCLUDE("/home/joemelt101/catkin_ws/build/create_autonomy/ca_driver/cmake_install.cmake")
+  INCLUDE("/home/joemelt101/catkin_ws/build/labtwo/cmake_install.cmake")
 
 ENDIF(NOT CMAKE_INSTALL_LOCAL_ONLY)
 

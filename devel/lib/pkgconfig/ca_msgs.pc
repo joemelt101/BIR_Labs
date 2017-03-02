@@ -1,0 +1,8 @@
+prefix=/home/joemelt101/catkin_ws/devel
+
+Name: ca_msgs
+Description: Description of ca_msgs
+Version: 1.2.0
+Cflags: -I/home/joemelt101/catkin_ws/devel/include
+Libs: -L/home/joemelt101/catkin_ws/devel/lib 
+Requires: message_runtime std_msgs
