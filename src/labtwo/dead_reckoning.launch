@@ -1,0 +1,9 @@
+<launch>
+    <arg name="xPos" />
+    <arg name="yPos" />
+    <arg name="angle" />
+
+    <node name="stageros" pkg="stage_ros" type="stageros" args="/home/joemelt101/catkin_ws/maps/simple_map.world" />
+    <node name="wheel2twist_node" pkg="ca_driver" type="wheel2twist_node" />
+    <node name="dead_reckoning_node" pkg="labtwo" type="dead_reckoning_node" args="$(arg xPos) $(arg yPos) $(arg angle)" output="screen" />
+</launch>

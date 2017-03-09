@@ -19,13 +19,20 @@ int main(int argc, char** argv)
     ////////////////////
     // Initiate the node
 
+    float x, y, angle;
+    x = atof(argv[1]);
+    y = atof(argv[2]);
+    angle = atof(argv[3]);
+
     ros::init(argc, argv, "dead_reckoning");
     ros::start();
     irobot::RoombaBot rCon;
 
     ros::spinOnce();
+
+    ROS_INFO("Entered: (x, y, ang) = (%f, %f, %f)", x, y, angle);
     
-    goTo(rCon, 1, -1, PI / 4);
+    goTo(rCon, x, y, angle);
 
     ///////////////////////
     // Start the work cycle

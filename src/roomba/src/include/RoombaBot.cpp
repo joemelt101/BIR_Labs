@@ -146,86 +146,43 @@ namespace irobot
             tf::Transform iTo = _oTi.inverse();
             tf::Transform gPr = _gTi * iTo * oPr;
 
+            float theta = tf::getYaw(gPr.getRotation());
+
+            /////////////////////////////////////
             // Calculate the alpha, beta, and rho
+
             tf::Vector3 gPr_point = gPr.getOrigin(); // includes dx, dy, dz
             float dx = -gPr_point.getX();
             float dy = -gPr_point.getY();
-            //ROS_INFO_THROTTLE(5, "(dx, dy) = (%f, %f)", dx, dy);
             
             if (dx == 0)
             {
                 dx = 0.00001;
             }
 
-            float theta = tf::getYaw(gPr.getRotation());
-            //ROS_INFO("Theta: %f", theta);
-            float beta = -atan(dy / dx);
-            float alpha = -beta - theta;
-
-            // float alpha = -theta + atan2(dy, dx);
-            // float beta = -theta - alpha;
-
-            //if (dx < 0)
-            if (_reverseVelocity)
-            {
-                // Reverse the direction of the goal and robot
-                tf::Transform rotateAroundYaw180Degrees;
-                rotateAroundYaw180Degrees.setIdentity();
-                tf::Quaternion q;
-                q.setRPY(0, 0, PI); //180 degree rotation
-                rotateAroundYaw180Degrees.setRotation(q);
-                gPr = gPr * rotateAroundYaw180Degrees;
-
-                tf::Vector3 gPr_point = gPr.getOrigin(); // includes dx, dy, dz
-                dx = -gPr_point.getX();
-                dy = -gPr_point.getY();
-                theta = tf::getYaw(gPr.getRotation()) - PI;
-                beta = -atan(dy / dx);
-                alpha = -beta - theta;
-                // alpha = -theta + atan2(dy, dx);
-                // beta = -theta - alpha;
-
-                // float bookAlpha = -theta + atan2(dy, dx);
-                // float bookBeta = -theta - alpha;
-
-                //ROS_INFO_THROTTLE(.1, "Pre Adjustment: (alpha, beta) = (%f, %f)", alpha, beta);
-                //ROS_INFO_THROTTLE(.1, "Ours: (%f, %f) v. Book: (%f, %f)", beta, alpha, bookAlpha, bookBeta);
-                
-                // if (fabs(beta) > PI / 2)
-                // {
-                //     float factor = fabs(PI / 2 / beta);
-                //     alpha *= factor;
-                //     beta *= factor;
-                // }
-
-                // if (fabs(alpha) > PI / 2)
-                // {
-                //     float factor = fabs(PI / 2 / alpha);
-                //     beta *= factor;
-                //     alpha *= factor;
-                // }
-
-                ROS_INFO_THROTTLE(.1, "Post Adjustment: (alpha, beta) = (%f, %f)", alpha, beta);
-
-                // dx *= -1;
-                // dy *= -1;
-                // theta = tf::getYaw(gPr.getRotation()) - PI; // Need to flip the theta too!!!
-                // beta = -atan(dy / dx);
-                // alpha = -beta - theta;
-
-                // Reverse the direction of the velocity
-            }
-
+            // float beta = -atan(dy / dx);
+            // float alpha = -beta - theta;
+            float alpha = -theta + atan2(dy, dx);
             float rho = gPr_point.length(); 
 
-            // Check to see if close enough to the end
-            // ensure BETA < Threshhold
-            // Ensure length of x, y, z < threshhold
+            if (_reverseVelocity)
+            {
+                if (alpha < 0)
+                {
+                    alpha += PI;
+                }
+                else
+                {
+                    alpha -= PI;
+                }
+            }
+
+            float beta = -theta - alpha;
 
             // ROS_INFO_THROTTLE(1, "Plain: (rho, alpha, beta, theta): (%f, %f, %f, %f)", rho, alpha, beta, theta);
-            // ROS_INFO_THROTTLE(1, "Fabulous: (rho, alpha, beta, theta): (%f, %f, %f, %f)", fabs(rho), fabs(alpha), fabs(beta), fabs(theta));
-            // ROS_INFO_THROTTLE(1, "DEG_TO_RAD(5) = %f", DEG_TO_RAD(5));
 
+            /////////////////////////////////
+            // See if close enough to the end
 
             if (fabs(beta) < DEG_TO_RAD(3) && fabs(rho) < 0.02 && fabs(alpha) < DEG_TO_RAD(3))
             {
@@ -235,39 +192,25 @@ namespace irobot
             }
             else
             {
-                // _kp = 0.5;
-                // _kb = -0.5;
-                // _ka = 1.5;
+                ////////////////////
+                // Keep progressing!
 
                 // Plug into the loop to determine the wheel velocities
-                //ROS_INFO_THROTTLE(.1, "(rho, alpha, beta) = (%f, %f, %f)", rho, alpha, beta);
 
+                //ROS_INFO_THROTTLE(.1, "(rho, alpha, beta, theta): (%f, %f, %f, %f)", rho, alpha, beta, theta);
                 float phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + _kb*beta*CHASSIS_RAD);
                 float phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - _kb*beta*CHASSIS_RAD);
 
-                // if (alpha < -PI / 2)
-                // {
-                //     phi_r = 1;
-                //     phi_l = 0;
-                // }
-
-                // if (alpha > PI / 2)
-                // {
-                //     phi_r = 0;
-                //     phi_l = 1;
-                // }
+                //ROS_INFO_THROTTLE(.1, "(phi_r, phi_l) = (%f, %f)", phi_r, phi_l);
 
                 if (_reverseVelocity)
                 {
+                    // Have a backwards perspective
+                    // Need to flip the wheel velocities and reverse them to compensate
                     float temp = -phi_r;
                     phi_r = -phi_l;
                     phi_l = temp;
                 }
-
-                //ROS_INFO_THROTTLE(.1, "(phi_l, phi_r), = (%f, %f)", phi_l, phi_r);
-
-                //ROS_INFO_THROTTLE(1, "(phi_r, phi_l): (%f, %f)", phi_r, phi_l);
-                //ROS_INFO_THROTTLE(1, "(rho, alpha, beta, theta): (%f, %f, %f, %f)", rho, alpha, beta, theta);
 
                 // Send off wheel velocities and we're done!
                 ca_msgs::WheelVelocity wheelVelocity;
@@ -372,38 +315,27 @@ namespace irobot
     {
         // Set Initial Reference Frame to Origin
         tf::Transform oTi(_currentPose);
-
-        tf::Vector3 p = iPg.getOrigin();
-        float x, y, z, theta;
-        x = p.getX();
-        y = p.getY();
-        z = p.getZ();
-        theta = tf::getYaw(iPg.getRotation());
-
-        // Calculate the alpha, beta, and rho
-        tf::Vector3 gPr_point = gPr.getOrigin(); // includes dx, dy, dz
-        float dx = -gPr_point.getX();
-        float dy = -gPr_point.getY();
-
-        float alpha = -theta + atan2(dy, dx);
-
-        if (fabs(alpha) > PI / 2)
-        {
-            // reverse direction
-            _reverseVelocity = true;
-        }
-        
-        ROS_INFO("Go to position: (%f, %f, %f, %f)", x, y, z, theta);
-
         _oTi = oTi;
-
-        tf::Transform oPr = _currentPose;
-        tf::Transform iTo = _oTi.inverse();
-        tf::Transform gPr = _gTi * iTo * oPr;
 
         // Calculate the Goal Ref Frame from the Initial Frame using the goalPosition variables
         _iTg = iPg;
         _gTi = _iTg.inverse();
+
+        // Calculate the position of the robot with respect to the goal
+        tf::Transform oPr = _currentPose;
+        tf::Transform iTo = _oTi.inverse();
+        tf::Transform gPr = _gTi * iTo * oPr;
+
+        // Determine whether you move forward or behind
+        tf::Vector3 gPr_point = gPr.getOrigin(); // includes dx, dy, dz
+        float dx = -gPr_point.getX();
+
+        if (dx < 0)
+        {
+            // reverse direction
+            _reverseVelocity = true;
+        }
+
         _moving = true;
     }
 }
