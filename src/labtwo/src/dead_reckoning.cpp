@@ -2,6 +2,18 @@
 #include "../../roomba/src/include/RoombaBot.cpp"
 #define PI 3.14159
 
+void goTo(irobot::RoombaBot &rCon, float x, float y, float angle)
+{
+    tf::Vector3 pos_v3(x, y, 0);
+    tf::Transform position;
+    position.setIdentity();
+    tf::Quaternion q;
+    q.setRPY(0, 0, angle); // Can handle positive x and y's, and negative angles --> Fails elsewhere...
+    position.setRotation(q);
+    position.setOrigin(pos_v3);
+    rCon.goToPosition(position);
+}
+
 int main(int argc, char** argv)
 {
     ////////////////////
@@ -13,20 +25,19 @@ int main(int argc, char** argv)
 
     ros::spinOnce();
     
-    tf::Vector3 pos_v3(0, 0, 0);
-    tf::Transform position;
-    position.setIdentity();
-    tf::Quaternion q;
-    q.setRPY(0, 0, PI / 4);
-    position.setRotation(q);
-    position.setOrigin(pos_v3);
-    rCon.goToPosition(position);
+    goTo(rCon, 1, -1, PI / 4);
 
-     ///////////////////////
-     // Start the work cycle
-     while (ros::ok())
-     {
+    ///////////////////////
+    // Start the work cycle
+    while (ros::ok())
+    {
         rCon.update();
+
+        if (!rCon.actionInProgress())
+        {
+            //goTo(rCon, -1, -1, 0);
+        }
+
         ros::spinOnce();
     }
 

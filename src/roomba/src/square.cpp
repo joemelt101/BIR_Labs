@@ -70,8 +70,8 @@ int main(int argc, char** argv)
     float angleToTurn = 2 * PI / numTimes;
     bool readyToTurn = false;
 
-    // ///////////////////////
-    // // Start the work cycle
+     ///////////////////////
+     // Start the work cycle
      while (ros::ok())
      {
         rCon.update();
