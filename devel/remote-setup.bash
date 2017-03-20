@@ -1,0 +1,2 @@
+export ROS_MASTER_IP=10.14.1.243:12205
+export ROS_IP=10.14.1.243
