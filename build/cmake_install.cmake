@@ -124,6 +124,7 @@ IF(NOT CMAKE_INSTALL_LOCAL_ONLY)
   INCLUDE("/home/joemelt101/catkin_ws/build/labone/cmake_install.cmake")
   INCLUDE("/home/joemelt101/catkin_ws/build/create_autonomy/ca_description/cmake_install.cmake")
   INCLUDE("/home/joemelt101/catkin_ws/build/create_autonomy/ca_driver/cmake_install.cmake")
+  INCLUDE("/home/joemelt101/catkin_ws/build/irobot/cmake_install.cmake")
   INCLUDE("/home/joemelt101/catkin_ws/build/labtwo/cmake_install.cmake")
 
 ENDIF(NOT CMAKE_INSTALL_LOCAL_ONLY)

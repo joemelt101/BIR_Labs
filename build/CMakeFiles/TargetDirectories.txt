@@ -35,6 +35,7 @@
 /home/joemelt101/catkin_ws/build/gtest/CMakeFiles/gtest.dir
 /home/joemelt101/catkin_ws/build/gtest/CMakeFiles/gtest_main.dir
 /home/joemelt101/catkin_ws/build/roomba/CMakeFiles/irobot.dir
+/home/joemelt101/catkin_ws/build/irobot/CMakeFiles/lab3_node.dir
 /home/joemelt101/catkin_ws/build/create_autonomy/ca_driver/CMakeFiles/libcreate.dir
 /home/joemelt101/catkin_ws/build/roomba/CMakeFiles/nav_msgs_generate_messages_cpp.dir
 /home/joemelt101/catkin_ws/build/roomba/CMakeFiles/nav_msgs_generate_messages_lisp.dir

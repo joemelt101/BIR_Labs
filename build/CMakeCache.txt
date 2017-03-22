@@ -369,8 +369,14 @@ gtest_force_shared_crt:BOOL=OFF
 //Dependencies for the target
 gtest_main_LIB_DEPENDS:STATIC=general;-lpthread;general;gtest;
 
+//Value Computed by CMake
+irobot_BINARY_DIR:STATIC=/home/joemelt101/catkin_ws/build/irobot
+
 //Dependencies for target
 irobot_LIB_DEPENDS:STATIC=
+
+//Value Computed by CMake
+irobot_SOURCE_DIR:STATIC=/home/joemelt101/catkin_ws/src/irobot
 
 //Value Computed by CMake
 labone_BINARY_DIR:STATIC=/home/joemelt101/catkin_ws/build/labone
@@ -584,7 +590,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_LOCAL_GENERATORS:INTERNAL=10
+CMAKE_NUMBER_OF_LOCAL_GENERATORS:INTERNAL=11
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP

@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include "../../roomba/src/include/RoombaBot.cpp"
+#include "RoombaBot.cpp"
 #define PI 3.14159
 
 void goTo(irobot::RoombaBot &rCon, float x, float y, float angle)

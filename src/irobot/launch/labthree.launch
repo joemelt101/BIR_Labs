@@ -2,11 +2,12 @@
     <arg name="xPos" />
     <arg name="yPos" />
     <arg name="angle" />
-    <arg name="kp" />
+    <!--<arg name="kp" />
     <arg name="kb" />
-    <arg name="ka" />
+    <arg name="ka" />-->
 
     <node name="stageros" pkg="stage_ros" type="stageros" args="/home/joemelt101/catkin_ws/maps/simple_map.world" />
+    <node name="serial_node" pkg="rosserial_python" type="serial_node.py" args="_port:=/dev/ttyACM0" />
     <node name="wheel2twist_node" pkg="ca_driver" type="wheel2twist_node" />
-    <node name="labtwo_node" pkg="irobot" type="labtwo_node" args="$(arg xPos) $(arg yPos) $(arg angle) $(arg kp) $(arg kb) $(arg ka)" output="screen" />
+    <node name="lab3_node" pkg="irobot" type="lab3_node" args="$(arg xPos) $(arg yPos) $(arg angle) 0.5 -0.5 1.5" output="screen" />
 </launch>

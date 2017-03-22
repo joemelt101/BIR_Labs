@@ -1099,6 +1099,19 @@ wheel2twist_node/fast:
 .PHONY : wheel2twist_node/fast
 
 #=============================================================================
+# Target rules for targets named lab3_node
+
+# Build rule for target.
+lab3_node: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 lab3_node
+.PHONY : lab3_node
+
+# fast build rule for target.
+lab3_node/fast:
+	$(MAKE) -f irobot/CMakeFiles/lab3_node.dir/build.make irobot/CMakeFiles/lab3_node.dir/build
+.PHONY : lab3_node/fast
+
+#=============================================================================
 # Target rules for targets named dead_reckoning_node
 
 # Build rule for target.
@@ -1197,6 +1210,7 @@ help:
 	@echo "... diagnostic_msgs_generate_messages_py"
 	@echo "... libcreate"
 	@echo "... wheel2twist_node"
+	@echo "... lab3_node"
 	@echo "... dead_reckoning_node"
 .PHONY : help
 

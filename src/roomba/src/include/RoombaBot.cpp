@@ -3,6 +3,7 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/Float64.h>
 #include <math.h>
 
 #include "ca_msgs/WheelVelocity.h"
@@ -44,11 +45,13 @@ namespace irobot
             bool _reverseVelocity;
             void sendVelocityMessage(); // Sends the velocity message to the hardware. Called repeatedly via update.
             void getPose(const nav_msgs::Odometry::ConstPtr& pose); // Callback. Sets _currentPose to the updated value.
+            void getYaw(const std_msgs::Float64::ConstPtr& yaw); // Callback. Sets _currentPose yaw.
 
             tf::Transform _currentPose; // The current position of the robot.
             tf::Transform _desiredPosition; // The desired position of the robot.
 
             ros::Subscriber _odomSubscriber; // The odometer subscriber. This takes values and populates local variables via callbacks.
+            ros::Subscriber _yawSubscriber; // The yaw subscriber (from imu).
             ros::Publisher _velocityPublisher; // The publisher for the velocity. Sends the velocity to the hardware.
             ros::Publisher _wheelPublisher;
     };
@@ -60,6 +63,7 @@ namespace irobot
         _rotating = false;
         ros::NodeHandle nh;
         _velocityPublisher = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 100, false);
+        _yawSubscriber = nh.subscribe<std_msgs::Float64>("/imu", 100, &RoombaBot::getYaw, this);
         _wheelPublisher = nh.advertise<ca_msgs::WheelVelocity>("/ca_msgs/WheelVelocity", 100, false);
         _odomSubscriber = nh.subscribe<nav_msgs::Odometry>("/odom", 100, &RoombaBot::getPose, this);
 
@@ -100,6 +104,8 @@ namespace irobot
 
     void RoombaBot::update(void)
     {
+        ROS_INFO_THROTTLE(.3, "Yaw: %f", tf::getYaw(_currentPose.getRotation()));
+
         //ROS_INFO("Hello!");
         sendVelocityMessage();
 
@@ -205,12 +211,9 @@ namespace irobot
 
                 // Plug into the loop to determine the wheel velocities
 
-                ROS_INFO_THROTTLE(.1, "(rho, alpha, beta, theta): (%f, %f, %f, %f)", rho, alpha, beta, theta);
+                //ROS_INFO_THROTTLE(.1, "(rho, alpha, beta, theta): (%f, %f, %f, %f)", rho, alpha, beta, theta);
                 float phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + _kb*beta*CHASSIS_RAD);
                 float phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - _kb*beta*CHASSIS_RAD);
-
-                ROS_INFO("%f", sizeof(float));
-                ROS_INFO("%d", sizeof(double));
 
                 //ROS_INFO_THROTTLE(.1, "(phi_r, phi_l) = (%f, %f)", phi_r, phi_l);
 
@@ -244,15 +247,15 @@ namespace irobot
         // msgToSend.angular.z = _angularVelocity;
 
         // Do my own conversion to wheel angles
-        ca_msgs::WheelVelocity wheelVelocity;
+        // ca_msgs::WheelVelocity wheelVelocity;
 
-        //ROS_INFO_THROTTLE(5, "v = %f, av = %f, r = %f", _velocity, _angularVelocity, WHEEL_RADIUS);
-        float w1 = (_velocity + CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
-        float w2 = (_velocity - CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
-        wheelVelocity.velocityRight = w1;
-        wheelVelocity.velocityLeft = w2;
-        //ROS_INFO_THROTTLE(5, "Velocity Left: %f, Velocity Right: %f", w1, w2);
-        _wheelPublisher.publish(wheelVelocity);
+        // //ROS_INFO_THROTTLE(5, "v = %f, av = %f, r = %f", _velocity, _angularVelocity, WHEEL_RADIUS);
+        // float w1 = (_velocity + CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
+        // float w2 = (_velocity - CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
+        // wheelVelocity.velocityRight = w1;
+        // wheelVelocity.velocityLeft = w2;
+        // //ROS_INFO_THROTTLE(5, "Velocity Left: %f, Velocity Right: %f", w1, w2);
+        // _wheelPublisher.publish(wheelVelocity);
 
         //_velocityPublisher.publish(msgToSend);
     }
@@ -265,18 +268,27 @@ namespace irobot
         float currentZ = odom->pose.pose.position.z;
 
         // Get orientation Quaternion
-        float x = odom->pose.pose.orientation.x;
-        float y = odom->pose.pose.orientation.y;
-        float z = odom->pose.pose.orientation.z;
-        float w = odom->pose.pose.orientation.w;
-        tf::Quaternion q(x, y, z, w);
+        // float x = odom->pose.pose.orientation.x;
+        // float y = odom->pose.pose.orientation.y;
+        // float z = odom->pose.pose.orientation.z;
+        // float w = odom->pose.pose.orientation.w;
+        // tf::Quaternion q(x, y, z, w);
 
         // Set the current position
         tf::Transform transform;
         transform.setIdentity();
         transform.setOrigin(tf::Vector3(currentX, currentY, currentZ));
-        transform.setRotation(q);
+        // transform.setRotation(q);
         _currentPose = transform;
+    }
+
+    void RoombaBot::getYaw(const std_msgs::Float64::ConstPtr& yaw)
+    {
+        // Orientation Quaternion
+        tf::Quaternion q;
+        float radians = yaw->data / 360 * 2 * PI;
+        q.setRPY(0.0, 0.0, yaw->data);
+        _currentPose.setRotation(q);
     }
 
     void RoombaBot::moveFoward(float distance)

@@ -3,9 +3,11 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Vector3.h>
 #include <nav_msgs/Odometry.h>
+#include <std_msgs/Float64.h>
 #include <math.h>
 
 #include "ca_msgs/WheelVelocity.h"
+#include "IMUSensor.cpp"
 
 #define PI 3.14159
 
@@ -43,9 +45,10 @@ namespace irobot
             bool _moving; // Whether or not the robot is moving directly to a location
             bool _reverseVelocity;
             void sendVelocityMessage(); // Sends the velocity message to the hardware. Called repeatedly via update.
-            void getPose(const nav_msgs::Odometry::ConstPtr& pose); // Callback. Sets _currentPose to the updated value.
+            void getPose(const nav_msgs::Odometry::ConstPtr& pose); // Callback. Sets _oPr to the updated value.
+            IMUSensor _imuSensor;
 
-            tf::Transform _currentPose; // The current position of the robot.
+            tf::Transform _oPr; // The current position of the robot.
             tf::Transform _desiredPosition; // The desired position of the robot.
 
             ros::Subscriber _odomSubscriber; // The odometer subscriber. This takes values and populates local variables via callbacks.
@@ -67,8 +70,16 @@ namespace irobot
         _kb = -0.5;
         _ka = 1.5;
 
-        _currentPose.setIdentity();
-        ros::Duration(1).sleep();
+        _oPr.setIdentity();
+        // Wait for sensors to calibrate and for subscribers to hook into publishers
+
+        // Wait for IMU sensor to calibrate
+        ROS_INFO("IMU Calibrating...");
+        while (! _imuSensor.isReady() && ros::ok())
+        {
+            ros::spinOnce();
+        }
+        ROS_INFO("IMU Calibration Complete...");
     }
 
     bool RoombaBot::actionInProgress()
@@ -100,8 +111,12 @@ namespace irobot
 
     void RoombaBot::update(void)
     {
+        // ROS_INFO_THROTTLE(.2, "Raw Yaw: %f", _imuSensor.getYaw());
+        // ROS_INFO_THROTTLE(.2, "_currentPositionYaw: %f", tf::getYaw(_oPr.getRotation()));
+        
+
         //ROS_INFO("Hello!");
-        sendVelocityMessage();
+        // sendVelocityMessage();
 
         if (_movingFoward == true)
         {
@@ -109,7 +124,7 @@ namespace irobot
             tf::Vector3 goal_pt = _desiredPosition.getOrigin();
 
             // Get current point
-            tf::Vector3 current_pt = _currentPose.getOrigin();
+            tf::Vector3 current_pt = _oPr.getOrigin();
 
             // Get the difference
             tf::Vector3 diff = goal_pt - current_pt;
@@ -132,7 +147,7 @@ namespace irobot
         if (_rotating)
         {
             // In radians
-            float currentAngle = _currentPose.getRotation().getAngle();
+            float currentAngle = _oPr.getRotation().getAngle();
             float desiredAngle = _desiredPosition.getRotation().getAngle();
 
             float diff = desiredAngle - currentAngle;
@@ -150,7 +165,7 @@ namespace irobot
 
         if (_moving)
         {
-            tf::Transform oPr = _currentPose;
+            tf::Transform oPr = _oPr;
             tf::Transform iTo = _oTi.inverse();
             tf::Transform gPr = _gTi * iTo * oPr;
 
@@ -205,12 +220,9 @@ namespace irobot
 
                 // Plug into the loop to determine the wheel velocities
 
-                ROS_INFO_THROTTLE(.1, "(rho, alpha, beta, theta): (%f, %f, %f, %f)", rho, alpha, beta, theta);
+                //ROS_INFO_THROTTLE(.1, "(rho, alpha, beta, theta): (%f, %f, %f, %f)", rho, alpha, beta, theta);
                 float phi_r = 1 / WHEEL_RADIUS * (_kp*rho + _ka*alpha*CHASSIS_RAD + _kb*beta*CHASSIS_RAD);
                 float phi_l = 1 / WHEEL_RADIUS * (_kp*rho - _ka*alpha*CHASSIS_RAD - _kb*beta*CHASSIS_RAD);
-
-                ROS_INFO("%f", sizeof(float));
-                ROS_INFO("%d", sizeof(double));
 
                 //ROS_INFO_THROTTLE(.1, "(phi_r, phi_l) = (%f, %f)", phi_r, phi_l);
 
@@ -244,15 +256,15 @@ namespace irobot
         // msgToSend.angular.z = _angularVelocity;
 
         // Do my own conversion to wheel angles
-        ca_msgs::WheelVelocity wheelVelocity;
+        // ca_msgs::WheelVelocity wheelVelocity;
 
-        //ROS_INFO_THROTTLE(5, "v = %f, av = %f, r = %f", _velocity, _angularVelocity, WHEEL_RADIUS);
-        float w1 = (_velocity + CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
-        float w2 = (_velocity - CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
-        wheelVelocity.velocityRight = w1;
-        wheelVelocity.velocityLeft = w2;
-        //ROS_INFO_THROTTLE(5, "Velocity Left: %f, Velocity Right: %f", w1, w2);
-        _wheelPublisher.publish(wheelVelocity);
+        // //ROS_INFO_THROTTLE(5, "v = %f, av = %f, r = %f", _velocity, _angularVelocity, WHEEL_RADIUS);
+        // float w1 = (_velocity + CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
+        // float w2 = (_velocity - CHASSIS_RAD * _angularVelocity) / WHEEL_RADIUS;
+        // wheelVelocity.velocityRight = w1;
+        // wheelVelocity.velocityLeft = w2;
+        // //ROS_INFO_THROTTLE(5, "Velocity Left: %f, Velocity Right: %f", w1, w2);
+        // _wheelPublisher.publish(wheelVelocity);
 
         //_velocityPublisher.publish(msgToSend);
     }
@@ -265,18 +277,33 @@ namespace irobot
         float currentZ = odom->pose.pose.position.z;
 
         // Get orientation Quaternion
-        float x = odom->pose.pose.orientation.x;
-        float y = odom->pose.pose.orientation.y;
-        float z = odom->pose.pose.orientation.z;
-        float w = odom->pose.pose.orientation.w;
-        tf::Quaternion q(x, y, z, w);
+        // float x = odom->pose.pose.orientation.x;
+        // float y = odom->pose.pose.orientation.y;
+        // float z = odom->pose.pose.orientation.z;
+        // float w = odom->pose.pose.orientation.w;
+        // tf::Quaternion q(x, y, z, w);
+
+        //ROS_INFO_THROTTLE(.1, "RoombaBot: Ready Yaw = %f", _imuSensor.getYaw());
+        tf::Quaternion q;
+        q.setRPY(0.0, 0.0, _imuSensor.getYaw());
+        tf::Vector3 newOrigin(currentX, currentY, currentZ);
+
+        if (_oPr.getOrigin() == newOrigin)
+        {
+            // The robot's wheels aren't moving
+            // Make sure the sensor is locked to avoid any issues
+            //ROS_INFO_THROTTLE(1, "Sensor Locked!");
+            _imuSensor.lockSensor();
+        }
+        else
+        {
+            //ROS_INFO_THROTTLE(1, "Sensor Unlocked!");
+            _imuSensor.unlockSensor();
+        }
 
         // Set the current position
-        tf::Transform transform;
-        transform.setIdentity();
-        transform.setOrigin(tf::Vector3(currentX, currentY, currentZ));
-        transform.setRotation(q);
-        _currentPose = transform;
+        _oPr.setOrigin(newOrigin);
+        _oPr.setRotation(q);
     }
 
     void RoombaBot::moveFoward(float distance)
@@ -286,7 +313,7 @@ namespace irobot
         tf::Transform t1;
         t1.setIdentity();
         t1.setOrigin(tf::Vector3(distance, 0.0, 0.0));
-        _desiredPosition = _currentPose * t1;
+        _desiredPosition = _oPr * t1;
         _closestDistance = 10000; //set to a high number so it decreases...
 
         setVelocity(0.25);
@@ -301,7 +328,7 @@ namespace irobot
         tf::Quaternion rotationOffset;
         rotationOffset.setRPY(0.0, 0.0, -radianOffset);
         t1.setRotation(rotationOffset);
-        _desiredPosition = _currentPose * t1;
+        _desiredPosition = _oPr * t1;
 
         ROS_INFO("Started turning!");
 
@@ -317,7 +344,7 @@ namespace irobot
         tf::Quaternion rotationOffset;
         rotationOffset.setRPY(0.0, 0.0, radianOffset);
         t1.setRotation(rotationOffset);
-        _desiredPosition = _currentPose * t1;
+        _desiredPosition = _oPr * t1;
 
         setAngVelocity(0.1);
     }
@@ -325,7 +352,7 @@ namespace irobot
     void RoombaBot::goToPosition(tf::Transform iPg)
     {
         // Set Initial Reference Frame to Origin
-        tf::Transform oTi(_currentPose);
+        tf::Transform oTi(_oPr);
         _oTi = oTi;
 
         // Calculate the Goal Ref Frame from the Initial Frame using the goalPosition variables
@@ -333,7 +360,7 @@ namespace irobot
         _gTi = _iTg.inverse();
 
         // Calculate the position of the robot with respect to the goal
-        tf::Transform oPr = _currentPose;
+        tf::Transform oPr = _oPr;
         tf::Transform iTo = _oTi.inverse();
         tf::Transform gPr = _gTi * iTo * oPr;
 

@@ -17,6 +17,8 @@ geometry_msgs/Vector3.h
 -
 nav_msgs/Odometry.h
 -
+std_msgs/Float64.h
+-
 math.h
 -
 ca_msgs/WheelVelocity.h
